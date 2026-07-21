@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  mongo-db:
+    image: mongo:latest
+    container_name: "Database"
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    networks:
+      - to-do-network
+    volumes:
+      - mongo-data:/data/db
+
+networks:
+  to-do-network:
+      external: true
+
+volumes:
+  mongo-data:
