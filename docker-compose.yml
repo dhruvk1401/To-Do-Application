@@ -17,8 +17,22 @@ services:
     build:
       context: ./dbservice
     restart: unless-stopped
+    depends_on:
+      - mongo-db
     ports:
       - "3000:3000"
+    networks:
+      - to-do-network
+
+  auth-service:
+    container_name: "Auth-Service"
+    build:
+      context: ./auth-service
+    restart: unless-stopped
+    depends_on: 
+      - dbservice
+    ports:
+      - "3001:3001"
     networks:
       - to-do-network
 
