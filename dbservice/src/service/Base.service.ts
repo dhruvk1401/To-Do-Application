@@ -38,7 +38,7 @@ export class BaseService<T> {
     }
   }
 
-  public async findById(id: string): Promise<HydratedDocument<T> | null> {
+  public async findById(id: string) {
     try {
       const data = await this.model.findById(id);
       console.log(
