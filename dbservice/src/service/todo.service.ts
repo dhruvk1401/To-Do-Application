@@ -56,11 +56,8 @@ export class TodoService extends BaseService<ITodoDocument> {
             if (!mongoose.Types.ObjectId.isValid(taskid)) {
                 throw new Error("id is not valid");
             }
-            const updatedtodo = await this.model.findByIdAndUpdate(
-                taskid,
-                 update, {
+            const updatedtodo = await this.model.findByIdAndUpdate(taskid, update, {
                 new: true,
-                runvalidators: true,
             });
             if (!updatedtodo) {
                 throw new Error("task not found");

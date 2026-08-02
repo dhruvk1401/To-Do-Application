@@ -3,7 +3,9 @@
 import "dotenv/config";
 import cors from "cors";
 import express, { Express } from "express";
+import {Router }from "express";
 
+import router from "./routes/auth.router";
 export class AuthService {
   private readonly app: Express;
 
@@ -15,6 +17,7 @@ export class AuthService {
         origin: "*",
       }),
     );
+    this.app.use('/auth', router);
   }
 
   public start(): void {
