@@ -3,46 +3,72 @@
 import "dotenv/config";
 import axios from "axios";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 export class UserAuthService {
     // add return type.
-    public async register(data: { username: string; password: string }) {
-      console.log("register service hit");
-        try {
-            if (!data.username || !data.password)
-                throw new Error(`[User-Service] Required fields are missing`);
-              console.log("checking if user already exists");
-
-            // add a method to find a user by username.
-           
-            
-            const saltrounds=Number(process.env.SALT_ROUNDS) || 10;
-
-            const newUser = {
-                username: data.username,
-                password: await bcrypt.hash(data.password.trim(), saltrounds),
-                createdAt: new Date(),
-            };
-
-            console.log("registering user in db service");
-            const registered = await axios.post(`${process.env.DB_SERVICE}/user`, newUser);
-                        console.log("user registered successfully in db service");
-
-            return registered.data;
-        } catch (error) {
-            console.log(`[User-Service] Unable to register the user due to ERROR: ${error}`);
-            throw error;
-        }
+    private generateToken(user: { id: string; username: string }): string {
+        return jwt.sign(
+            {
+                id: user.id,
+                username: user.username,
+            },
+            `process.env.JWT_SECRET`,
+            {
+                expiresIn: Number(process.env.JWT_EXPIRES),
+            }
+        );
     }
 
-    public async findbyusername(username: string): Promise<any | null> {
+    public async register(data: { username: string; password: string }): Promise<{
+        user: any;
+        token: string;
+    }> {
         try {
-            const response = await axios.get(`${process.env.DB_SERVICE}/user/${encodeURIComponent(username)}`);
-            return response.data;
-        } catch (error: any) {
-            if (axios.isAxiosError(error) && error.response?.status === 404) {
-                return null;
+            console.log(`processing player register`);
+            if (!data?.username.trim() || !data?.password.trim())
+                throw new Error(`[User-Service] Required fields are missing`);
+
+            // add a method to find a user by username.
+            const exsistinguser = await axios
+                .get(`${process.env.DB_SERVICE}/user/${data.username}`)
+                .catch(()=> null)
+
+            if (exsistinguser) {
+                throw new Error(
+                    `[User-Service] User with username ${data.username} already exists`
+                );
             }
+
+            const saltrounds = Number(process.env.SALT_ROUNDS) || 10;
+            const hashedpassword = await bcrypt.hash(data.password.trim(), saltrounds);
+
+            console.log(`salt rounds ${saltrounds}`)
+            console.log(`hashed password ${hashedpassword}`)
+
+            const newUser = {
+                username: data.username.trim(),
+                password: hashedpassword,
+                createdAt: new Date(),
+            };
+            console.log(`[User-Service] Registering new user: ${JSON.stringify(newUser)}`);
+
+            const registered = await axios.post(`${process.env.DB_SERVICE}/user`, newUser);
+            const createduser = registered.data;
+
+            console.log("user created successfully in db :", createduser);
+
+            const usertoken = this.generateToken({
+                id: createduser._id,
+                username: createduser.username,
+            });
+
+            return {
+                user: createduser,
+                token: usertoken,
+            };
+        } catch (error) {
+            console.log(`[User-Service] Unable to register the user due to ERROR: ${error}`);
             throw error;
         }
     }
