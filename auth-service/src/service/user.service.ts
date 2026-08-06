@@ -32,7 +32,7 @@ export class UserAuthService {
             // add a method to find a user by username.
             const exsistinguser = await axios
                 .get(`${process.env.DB_SERVICE}/user/${data.username}`)
-                .catch(()=> null)
+                .catch(() => null);
 
             if (exsistinguser) {
                 throw new Error(
@@ -43,8 +43,8 @@ export class UserAuthService {
             const saltrounds = Number(process.env.SALT_ROUNDS) || 10;
             const hashedpassword = await bcrypt.hash(data.password.trim(), saltrounds);
 
-            console.log(`salt rounds ${saltrounds}`)
-            console.log(`hashed password ${hashedpassword}`)
+            console.log(`salt rounds ${saltrounds}`);
+            console.log(`hashed password ${hashedpassword}`);
 
             const newUser = {
                 username: data.username.trim(),
@@ -69,6 +69,44 @@ export class UserAuthService {
             };
         } catch (error) {
             console.log(`[User-Service] Unable to register the user due to ERROR: ${error}`);
+            throw error;
+        }
+    }
+
+    public async login(data: { username: string; password: string }): Promise<{
+        user: any;
+        token: string;
+    }> {
+        try {
+            if (!data.username?.trim() || !data.password?.trim()) {
+                console.log(`[User-Service] both fields are required `);
+            }
+
+            const response = await axios
+                .get(`${process.env.DB_SERVICE}/user/${data.username}`)
+                .catch(() => null);
+
+            const user = response?.data;
+
+            if (!user) {
+                throw new Error("user is not found ");
+            }
+
+            const ispasswordvalid = await bcrypt.compare(data.password.trim(), user.password);
+
+            if (!ispasswordvalid) {
+                throw new Error("the password doest matches");
+            }
+
+            const token = this.generateToken(user);
+
+            const { password, ...safeuser } = user;
+
+            return {
+                user: safeuser,
+                token: token,
+            };
+        } catch (error) {
             throw error;
         }
     }

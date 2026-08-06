@@ -8,12 +8,25 @@ export class AuthController {
         this.userservice = new UserAuthService();
     }
     register = async (req: Request, res: Response): Promise<void> => {
+        console.log("register in auth called ");
         try {
             const result = await this.userservice.register(req.body);
             res.status(200).json(result);
-        } catch (error) {
-            res.status(500).json({
-                message: "registration failed ",
+        } catch (error: any) {
+            res.status(400).json({
+                message: error.message,
+            });
+        }
+    };
+
+    login = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const userlogin = await this.userservice.login(req.body);
+
+            res.status(200).json(userlogin);
+        } catch (error: any) {
+            res.status(400).json({
+                message: error.message,
             });
         }
     };
